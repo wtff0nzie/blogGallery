@@ -1,17 +1,49 @@
 ;(function (win, doc, undefined) {
-    var docEl = doc.document,
-        body = doc.body,
-        nuImgs = [],
-        blogArea,
-        navRight,
-        navLeft,
-        gallery,
-        rail;
+    'use strict';
+    
+    var docEl = doc.documentElement,
+            currentPane = 0,
+            body = doc.body,
+            paneCount = 0,
+            nuImgs = [],
+            playTimer,
+            blogArea,
+            navRight,
+            navLeft,
+            gallery,
+            rail,
+            css,
+            UA;
 
 
-    if (!doc.querySelector || !Array.isArray || !Object.keys) {
+    if (!doc.querySelector || !Array.isArray || !Object.keys || docEl.className.indexOf('bpModule-_backpage') > -1) {
         return;
     }
+
+    UA = (function () {
+        var styles = win.getComputedStyle(docEl, ''),
+                pre = ([].slice.call(styles).join('').match(/-(moz|webkit|ms)-/) || (styles.OLink === '' && ['', 'o']))[1],
+                dom = ('WebKit|Moz|MS|O').match(new RegExp('(' + pre + ')', 'i'))[1],
+                nv = win.navigator,
+                rx,
+                ie;
+
+        if (pre === 'ms') {
+            rx = new RegExp('MSIE ([0-9]{1,}[\.0-9]{0,})');
+            rx.exec(nv.userAgent);
+            ie = parseFloat(RegExp.$1);
+        }
+
+        return {
+            css         : '-' + pre + '-',
+            dom         : dom,
+            lowercase   : pre,
+            ie          : (ie || false),
+            js          : pre[0].toUpperCase() + pre.substr(1),
+            platform    : nv.platform.toLowerCase(),
+            touch       : ('ontouchstart' in docEl || 'onmsgesturechange' in win) ? true : false
+        };
+    }());
 
 
     var q$ = function (selector, context) {
@@ -26,44 +58,114 @@
         var r = el.getBoundingClientRect();
 
         return {
-            left    : (r.left + (body.scrollLeft || docEl.scrollLeft)),
-            top     : (r.top + (body.scrollTop || docEl.scrollTop)),
+            left    : (r.left + (body.scrollLeft 	|| docEl.scrollLeft)),
+            top     : (r.top + (body.scrollTop 		|| docEl.scrollTop)),
             width   : (r.right - r.left),
             height  : (r.bottom - r.top)
         };
     };
 
 
-    blogArea = q$('.bpModule-blog-post .hfeed.post')[0];
+    var navTo = function (paneIndex) {
+        var width = offset(gallery).width;
+
+        currentPane = paneIndex;
+
+        if (currentPane < 0) {
+            currentPane = 0;
+        } else if (currentPane > (paneCount - 1)) {
+            currentPane = (paneCount - 1);
+        }
+
+        setTimeout(function () {
+            var transform = ('translateX(-' + (currentPane * width) + 'px)');
+
+            rail.style[UA.js + 'Transform'] = transform;
+            rail.style['transform'] = transform;
+        }, 9);
+    };
+
+
+    blogArea = q$('.bpModule-blog-post .hfeed.post .entry')[0];
 
     if (!blogArea) {
         return;
     }
 
+    css = document.createElement('style');
+    css.innerHTML = '.smlImageGallery,.smlImageGallery .imageRail>div{height:300px;width:400px}.smlImageGallery{clear:both;overflow:hidden;position:relative;will-change:opacity}.smlImageGallery.live{opacity:1}.smlImageGallery .imageRail{height:100%;width:900px;will-change:transform,-webkit-transform}.smlImageGallery .imageRail>div{background:center center no-repeat;-webkit-background-size:cover;-moz-background-size:cover;-o-background-size:cover;background-size:cover;height:100%;float:left}.galNav{background:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACsAAABgCAMAAACzHHtdAAAABGdBTUEAALGPC/xhBQAAAAFzUkdCAK7OHOkAAAASUExURQAAAEFAQkFAQkFAQkFAQkFAQm97d0oAAAAGdFJOUwD6H1vPmy8OSLgAAAB6SURBVHja7dU5CsBADENReZn7XzmlWxkEziROrWL4zxDQXzSmdtipmzk/DXaa9BTJP/Z0psnXSmenrVq+BjcZ8GHvMvA1WINxA77W7w3AGwCWgLpXkalPoU5Mna045Mx1PvrM6GZekwGTscwXmmBNXmayvwhB5m+axANEMANYTrUKJgAAAABJRU5ErkJggg==)center center no-repeat;cursor:pointer;height:96px;height:100%;left:0;opacity:0;padding:20px;position:absolute;width:43px;top:0;z-index:3}.smlImageGallery:hover .galNav{opacity:1}.galNav:hover{background-color:rgba(255,255,255,.7)}.galNavRight{background-image:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACsAAABgCAMAAACzHHtdAAAABGdBTUEAALGPC/xhBQAAAAFzUkdCAK7OHOkAAAAVUExURQAAAEFAQkFAQkFAQkFAQkFAQkFAQjwWHqAAAAAHdFJOUwD6zxGbMmAzCf3vAAAAeElEQVR42u3UKRIAQQhDUcJ2/yOPHZkIRHeD/iqvCrM2+hJFtwUhbiCE2Pk44SbEyccuxOFoPoYQF9bkJRM/zSTW5CGTGjPpMZPU4lyTn4nym5XdBvCaSIUV9DR4iHAlzZlh2bTX4CwD3Ghga3CxQdxo4HcaWPHpB1x5A+/aEry2AAAAAElFTkSuQmCC);left:auto;right:0}.galNav,.smlImageGallery,.smlImageGallery .imageRail{-webkit-transition:.15s;-moz-transition:.15s;transition:.15s}';
+    doc.body.appendChild(css);
+
     gallery = doc.createElement('div');
-    gallery.className = 'imageGallery';
+    gallery.className = 'smlImageGallery';
+
+    gallery.onmouseover = function () {
+        clearInterval(playTimer);
+    };
+
+    gallery.onmouseleave = function () {
+        initPlayTimer();
+    };
 
     rail = doc.createElement('div');
     rail.className = 'imageRail';
 
+    navRight = doc.createElement('div');
+    navLeft = doc.createElement('div');
+
+    navRight.className = 'galNav galNavRight';
+    navLeft.className = 'galNav galNavLeft';
+
+    navRight.onclick = function () {
+        navTo(currentPane + 1);
+    };
+
+    navLeft.onclick = function () {
+        navTo(currentPane - 1);
+    };
+
+    gallery.appendChild(navRight);
+    gallery.appendChild(navLeft);
     gallery.appendChild(rail);
+
     blogArea.insertBefore(gallery, blogArea.firstChild);
 
     q$('img', blogArea).forEach(function (img) {
-        if (offset(el).width > 200) {
-            nuImgs.push(img.src);
+        if (offset(img).width > 200) {
             img.style.display = 'none';
+            nuImgs.push(img.src);
         }
     });
 
-    nuImgs.forEach(function (src) {
-        var img = new Image();
+    nuImgs.forEach(function (src, index) {
+        var div = doc.createElement('div'),
+                img = new Image();
 
         img.onload = function () {
-            rail.appendChild(img);
+            div.style.backgroundImage = 'url(' + src + ')';
+            rail.appendChild(div);
+            paneCount++;
+
+            if (index === (paneCount - 1)) {
+                gallery.className += ' live';
+            }
         };
 
         img.src = src;
     });
 
+    var play = function () {
+        currentPane++;
+
+        if (currentPane === paneCount) {
+            currentPane = 0;
+        }
+        navTo(currentPane);
+    };
+
+    var initPlayTimer = function () {
+        playTimer = setInterval(play, 3 * 1000);
+    }
+
+    initPlayTimer();
 }(window, document));
