@@ -24,11 +24,11 @@
 
     UA = (function () {
         var styles = win.getComputedStyle(docEl, ''),
-                pre = ([].slice.call(styles).join('').match(/-(moz|webkit|ms)-/) || (styles.OLink === '' && ['', 'o']))[1],
-                dom = ('WebKit|Moz|MS|O').match(new RegExp('(' + pre + ')', 'i'))[1],
-                nv = win.navigator,
-                rx,
-                ie;
+            pre = ([].slice.call(styles).join('').match(/-(moz|webkit|ms)-/) || (styles.OLink === '' && ['', 'o']))[1],
+            dom = ('WebKit|Moz|MS|O').match(new RegExp('(' + pre + ')', 'i'))[1],
+            nv = win.navigator,
+            rx,
+            ie;
 
         if (pre === 'ms') {
             rx = new RegExp('MSIE ([0-9]{1,}[\.0-9]{0,})');
@@ -192,11 +192,10 @@
 
     var initPlayTimer = function () {
         playTimer = setInterval(play, 3 * 1000);
-    }
+    };
 
     navState();
     initPlayTimer();
-
 
     // Mobile nav
     (function (options) {
