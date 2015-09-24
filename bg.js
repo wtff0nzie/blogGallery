@@ -8,6 +8,7 @@
         paneCount = 0,
         win = window,
         nuImgs = [],
+        frameWidth,
         playTimer,
         blogArea,
         navRight,
@@ -40,7 +41,7 @@
             css         : '-' + pre + '-',
             dom         : dom,
             lowercase   : pre,
-            ie          : (ie || false),
+            ie          : !!ie,
             js          : pre[0].toUpperCase() + pre.substr(1),
             platform    : nv.platform.toLowerCase(),
             touch       : ('ontouchstart' in docEl || 'onmsgesturechange' in win) ? true : false
@@ -60,8 +61,8 @@
         var r = el.getBoundingClientRect();
 
         return {
-            left    : (r.left + (body.scrollLeft 	|| docEl.scrollLeft)),
-            top     : (r.top + (body.scrollTop 		|| docEl.scrollTop)),
+            left    : (r.left + (body.scrollLeft || docEl.scrollLeft)),
+            top     : (r.top + (body.scrollTop || docEl.scrollTop)),
             width   : (r.right - r.left),
             height  : (r.bottom - r.top)
         };
@@ -109,10 +110,6 @@
     if (!blogArea) {
         return;
     }
-
-    css = doc.createElement('style');
-    css.innerHTML = '.smlImageGallery{clear:both;height:300px;overflow:hidden;position:relative;width:500px;will-change:opacity}.smlImageGallery.live{opacity:1}.smlImageGallery .imageRail{height:100%;width:1000%;will-change:transform,-webkit-transform;-webkit-transition:.3s;-moz-transition:.3s;transition:.3s}.smlImageGallery .imageRail>div{background:center center no-repeat;-webkit-background-size:cover;-moz-background-size:cover;-o-background-size:cover;background-size:cover;height:100%;float:left;width:10%}.galNav{background:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACsAAABgCAMAAACzHHtdAAAABGdBTUEAALGPC/xhBQAAAAFzUkdCAK7OHOkAAAASUExURQAAAEFAQkFAQkFAQkFAQkFAQm97d0oAAAAGdFJOUwD6H1vPmy8OSLgAAAB6SURBVHja7dU5CsBADENReZn7XzmlWxkEziROrWL4zxDQXzSmdtipmzk/DXaa9BTJP/Z0psnXSmenrVq+BjcZ8GHvMvA1WINxA77W7w3AGwCWgLpXkalPoU5Mna045Mx1PvrM6GZekwGTscwXmmBNXmayvwhB5m+axANEMANYTrUKJgAAAABJRU5ErkJggg==)center center no-repeat;cursor:pointer;height:96px;height:100%;left:0;opacity:0;padding:20px;position:absolute;width:43px;top:0;z-index:3}.smlImageGallery:hover .galNav{opacity:1}.galNav:hover{background-color:rgba(255,255,255,.7)}.galNavRight{background-image:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACsAAABgCAMAAACzHHtdAAAABGdBTUEAALGPC/xhBQAAAAFzUkdCAK7OHOkAAAAVUExURQAAAEFAQkFAQkFAQkFAQkFAQkFAQjwWHqAAAAAHdFJOUwD6zxGbMmAzCf3vAAAAeElEQVR42u3UKRIAQQhDUcJ2/yOPHZkIRHeD/iqvCrM2+hJFtwUhbiCE2Pk44SbEyccuxOFoPoYQF9bkJRM/zSTW5CGTGjPpMZPU4lyTn4nym5XdBvCaSIUV9DR4iHAlzZlh2bTX4CwD3Ghga3CxQdxo4HcaWPHpB1x5A+/aEry2AAAAAElFTkSuQmCC);left:auto;right:0}.galNav,.smlImageGallery{-webkit-transition:.15s;-moz-transition:.15s;transition:.15s}@media(max-width:767px){.smlImageGallery{height:500px;width:100%}.galNav:hover{background-color:transparent}}';
-    doc.body.appendChild(css);
 
     gallery = doc.createElement('div');
     gallery.className = 'smlImageGallery';
@@ -163,12 +160,23 @@
         }
     });
 
+    //
+    css = doc.createElement('style');
+    css.innerHTML = '.smlImageGallery{clear:both;height:300px;overflow:hidden;position:relative;width:500px;will-change:opacity}.smlImageGallery.live{opacity:1}.smlImageGallery .imageRail{height:100%;width:1000%;will-change:transform,-webkit-transform;-webkit-transition:.3s;-moz-transition:.3s;transition:.3s}.smlImageGallery .imageRail>div{background:center center no-repeat;-webkit-background-size:cover;-moz-background-size:cover;-o-background-size:cover;background-size:cover;height:100%;float:left;width:10%}.galNav{background:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACsAAABgCAMAAACzHHtdAAAABGdBTUEAALGPC/xhBQAAAAFzUkdCAK7OHOkAAAASUExURQAAAEFAQkFAQkFAQkFAQkFAQm97d0oAAAAGdFJOUwD6H1vPmy8OSLgAAAB6SURBVHja7dU5CsBADENReZn7XzmlWxkEziROrWL4zxDQXzSmdtipmzk/DXaa9BTJP/Z0psnXSmenrVq+BjcZ8GHvMvA1WINxA77W7w3AGwCWgLpXkalPoU5Mna045Mx1PvrM6GZekwGTscwXmmBNXmayvwhB5m+axANEMANYTrUKJgAAAABJRU5ErkJggg==)center center no-repeat;cursor:pointer;height:96px;height:100%;left:0;opacity:0;padding:20px;position:absolute;width:43px;top:0;z-index:3}.smlImageGallery:hover .galNav{opacity:1}.galNav:hover{background-color:rgba(255,255,255,.7)}.galNavRight{background-image:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACsAAABgCAMAAACzHHtdAAAABGdBTUEAALGPC/xhBQAAAAFzUkdCAK7OHOkAAAAVUExURQAAAEFAQkFAQkFAQkFAQkFAQkFAQjwWHqAAAAAHdFJOUwD6zxGbMmAzCf3vAAAAeElEQVR42u3UKRIAQQhDUcJ2/yOPHZkIRHeD/iqvCrM2+hJFtwUhbiCE2Pk44SbEyccuxOFoPoYQF9bkJRM/zSTW5CGTGjPpMZPU4lyTn4nym5XdBvCaSIUV9DR4iHAlzZlh2bTX4CwD3Ghga3CxQdxo4HcaWPHpB1x5A+/aEry2AAAAAElFTkSuQmCC);left:auto;right:0}.galNav,.smlImageGallery{-webkit-transition:.15s;-moz-transition:.15s;transition:.15s}@media(max-width:767px){.smlImageGallery{height:500px;width:100%}.galNav:hover{background-color:transparent}}';
+    doc.body.appendChild(css);
+
+    // Resize rail width
+    frameWidth = offset(gallery).width;
+    rail.style.width = (nuImgs.length * frameWidth) + 'px';
+
     nuImgs.forEach(function (src, index) {
         var div = doc.createElement('div'),
             img = new Image();
 
         img.onload = function () {
             div.style.backgroundImage = 'url(' + src + ')';
+            div.style.width = frameWidth + 'px';
+
             rail.appendChild(div);
             paneCount++;
 
