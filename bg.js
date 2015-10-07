@@ -7,13 +7,13 @@
         body = doc.body,
         paneCount = 0,
         win = window,
-        nuImgs = [],
         frameWidth,
         playTimer,
         blogArea,
         navRight,
         navLeft,
         gallery,
+        nuImgs,
         rail,
         css,
         UA;
@@ -23,6 +23,8 @@
         return;
     }
 
+
+    // CSS / JS helpers
     UA = (function () {
         var styles = win.getComputedStyle(docEl, ''),
             pre = ([].slice.call(styles).join('').match(/-(moz|webkit|ms)-/) || (styles.OLink === '' && ['', 'o']))[1],
@@ -49,6 +51,7 @@
     }());
 
 
+    // Lightweight queryselector
     var q$ = function (selector, context) {
         if (typeof selector === 'string') {
             return [].slice.call((context || doc).querySelectorAll(selector));
@@ -57,6 +60,7 @@
     };
 
 
+    // Discover dimensions / placement of element
     var offset = function (el) {
         var r = el.getBoundingClientRect();
 
@@ -68,6 +72,8 @@
         };
     };
 
+
+    // Update navigation to reflect current state
     var navState = function () {
         if (currentPane === 0) {
             navLeft.style.display = 'none';
@@ -83,8 +89,9 @@
     };
 
 
+    // Slide from image to image
     var navTo = function (paneIndex) {
-        var width = offset(gallery).width;
+        var width = frameWidth;
 
         currentPane = paneIndex;
 
@@ -95,13 +102,36 @@
         }
 
         setTimeout(function () {
-            var transform = ('translateX(-' + (currentPane * width) + 'px)');
+            var transform = ('translate3d(-' + (currentPane * width) + 'px,0,0)');
 
-            rail.style[UA.js + 'Transform'] = transform;
+            rail.style[UA.js + 'Transform3d'] = transform + ',0,0';
             rail.style.transform = transform;
         }, 9);
 
         navState();
+    };
+
+
+    // Add an image to slider
+    var addImage = function (img) {
+        if (offset(img).width > 200) {
+            // Kill smaller images here
+        }
+    };
+
+
+    // Auto play
+    var play = function () {
+        currentPane++;
+
+        if (currentPane === paneCount) {
+            currentPane = 0;
+        }
+        navTo(currentPane);
+    };
+
+    var initPlayTimer = function () {
+        playTimer = setInterval(play, 3 * 1000);
     };
 
 
@@ -110,6 +140,13 @@
     if (!blogArea) {
         return;
     }
+
+
+    // Widget styles
+    css = doc.createElement('style');
+    css.innerHTML = '.smlImageGallery,.smlImageGallery div{-moz-box-sizing:border-box;-webkit-box-sizing:border-box;box-sizing:border-box;margin:0;padding:0}.smlImageGallery{clear:both;height:300px;overflow:hidden;position:relative;width:500px;will-change:opacity}.smlImageGallery.live{opacity:1}.smlImageGallery>.imageRail{height:100%;width:1000%;will-change:transform,-webkit-transform;-webkit-transition:.3s;-moz-transition:.3s;transition:.3s}.smlImageGallery>.imageRail>div{background:center center no-repeat;-webkit-background-size:cover;-moz-background-size:cover;-o-background-size:cover;background-size:cover;height:100%;float:left;width:10%}.smlImageGallery>.imageRail>div>img{left:0;min-height:100%;position:absolute;width:100%;top:0}.smlImageGallery>.galNav{background:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACsAAABgCAMAAACzHHtdAAAABGdBTUEAALGPC/xhBQAAAAFzUkdCAK7OHOkAAAASUExURQAAAEFAQkFAQkFAQkFAQkFAQm97d0oAAAAGdFJOUwD6H1vPmy8OSLgAAAB6SURBVHja7dU5CsBADENReZn7XzmlWxkEziROrWL4zxDQXzSmdtipmzk/DXaa9BTJP/Z0psnXSmenrVq+BjcZ8GHvMvA1WINxA77W7w3AGwCWgLpXkalPoU5Mna045Mx1PvrM6GZekwGTscwXmmBNXmayvwhB5m+axANEMANYTrUKJgAAAABJRU5ErkJggg==)center center no-repeat;cursor:pointer;height:96px;height:100%;left:0;opacity:0;padding:20px;position:absolute;width:43px;top:0;z-index:3}.smlImageGallery:hover .galNav{opacity:1}.galNav:hover{background-color:rgba(255,255,255,.7)}.smlImageGallery>.galNavRight{background-image:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACsAAABgCAMAAACzHHtdAAAABGdBTUEAALGPC/xhBQAAAAFzUkdCAK7OHOkAAAAVUExURQAAAEFAQkFAQkFAQkFAQkFAQkFAQjwWHqAAAAAHdFJOUwD6zxGbMmAzCf3vAAAAeElEQVR42u3UKRIAQQhDUcJ2/yOPHZkIRHeD/iqvCrM2+hJFtwUhbiCE2Pk44SbEyccuxOFoPoYQF9bkJRM/zSTW5CGTGjPpMZPU4lyTn4nym5XdBvCaSIUV9DR4iHAlzZlh2bTX4CwD3Ghga3CxQdxo4HcaWPHpB1x5A+/aEry2AAAAAElFTkSuQmCC);left:auto;right:0}.galNav,.smlImageGallery{-webkit-transition:.15s;-moz-transition:.15s;transition:.15s}@media(max-width:767px){.smlImageGallery{height:500px;width:100%}.galNav:hover{background-color:transparent}}';
+    doc.body.appendChild(css);
+
 
     gallery = doc.createElement('div');
     gallery.className = 'smlImageGallery';
@@ -147,63 +184,43 @@
         navTo(currentPane - 1);
     };
 
+
+    // Append elements
     gallery.appendChild(navRight);
     gallery.appendChild(navLeft);
     gallery.appendChild(rail);
-
     blogArea.insertBefore(gallery, blogArea.firstChild);
 
-    q$('img', blogArea).forEach(function (img) {
-        if (offset(img).width > 200) {
-            img.style.display = 'none';
-            nuImgs.push(img.src);
-        }
-    });
-
-    //
-    css = doc.createElement('style');
-    css.innerHTML = '.smlImageGallery{clear:both;height:300px;overflow:hidden;position:relative;width:500px;will-change:opacity}.smlImageGallery.live{opacity:1}.smlImageGallery .imageRail{height:100%;width:1000%;will-change:transform,-webkit-transform;-webkit-transition:.3s;-moz-transition:.3s;transition:.3s}.smlImageGallery .imageRail>div{background:center center no-repeat;-webkit-background-size:cover;-moz-background-size:cover;-o-background-size:cover;background-size:cover;height:100%;float:left;width:10%}.galNav{background:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACsAAABgCAMAAACzHHtdAAAABGdBTUEAALGPC/xhBQAAAAFzUkdCAK7OHOkAAAASUExURQAAAEFAQkFAQkFAQkFAQkFAQm97d0oAAAAGdFJOUwD6H1vPmy8OSLgAAAB6SURBVHja7dU5CsBADENReZn7XzmlWxkEziROrWL4zxDQXzSmdtipmzk/DXaa9BTJP/Z0psnXSmenrVq+BjcZ8GHvMvA1WINxA77W7w3AGwCWgLpXkalPoU5Mna045Mx1PvrM6GZekwGTscwXmmBNXmayvwhB5m+axANEMANYTrUKJgAAAABJRU5ErkJggg==)center center no-repeat;cursor:pointer;height:96px;height:100%;left:0;opacity:0;padding:20px;position:absolute;width:43px;top:0;z-index:3}.smlImageGallery:hover .galNav{opacity:1}.galNav:hover{background-color:rgba(255,255,255,.7)}.galNavRight{background-image:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACsAAABgCAMAAACzHHtdAAAABGdBTUEAALGPC/xhBQAAAAFzUkdCAK7OHOkAAAAVUExURQAAAEFAQkFAQkFAQkFAQkFAQkFAQjwWHqAAAAAHdFJOUwD6zxGbMmAzCf3vAAAAeElEQVR42u3UKRIAQQhDUcJ2/yOPHZkIRHeD/iqvCrM2+hJFtwUhbiCE2Pk44SbEyccuxOFoPoYQF9bkJRM/zSTW5CGTGjPpMZPU4lyTn4nym5XdBvCaSIUV9DR4iHAlzZlh2bTX4CwD3Ghga3CxQdxo4HcaWPHpB1x5A+/aEry2AAAAAElFTkSuQmCC);left:auto;right:0}.galNav,.smlImageGallery{-webkit-transition:.15s;-moz-transition:.15s;transition:.15s}@media(max-width:767px){.smlImageGallery{height:500px;width:100%}.galNav:hover{background-color:transparent}}';
-    doc.body.appendChild(css);
-
-    // Resize rail width
     frameWidth = offset(gallery).width;
-    rail.style.width = (nuImgs.length * frameWidth) + 'px';
 
-    nuImgs.forEach(function (src, index) {
-        var div = doc.createElement('div'),
-            img = new Image();
+    // Add images
+    nuImgs = q$('img', blogArea);
 
-        img.onload = function () {
-            div.style.backgroundImage = 'url(' + src + ')';
-            div.style.width = frameWidth + 'px';
+    nuImgs.forEach(function (img) {
+        var div = doc.createElement('div');
 
-            rail.appendChild(div);
-            paneCount++;
+        img.style.display = 'none';
 
-            if (index === (paneCount - 1)) {
-                gallery.className += ' live';
-            }
-        };
+        div.style.backgroundImage = 'url(' + img.src + ')';
+        div.style.width = frameWidth + 'px';
+        div.setAttribute('data-img', img.src);
 
-        img.src = src;
+        paneCount++;
+
+        rail.appendChild(div);
+        rail.style.width = (paneCount * frameWidth) + 'px';
+
+        img.addEventListener('load', function () {
+            addImage(this);
+        });
     });
 
-    // Auto play
-    var play = function () {
-        currentPane++;
 
-        if (currentPane === paneCount) {
-            currentPane = 0;
-        }
-        navTo(currentPane);
-    };
-
-    var initPlayTimer = function () {
-        playTimer = setInterval(play, 3 * 1000);
-    };
-
+    // Start the show
     navState();
     initPlayTimer();
+    gallery.classList.add('live');
+
 
     // Mobile nav
     (function (o) {
